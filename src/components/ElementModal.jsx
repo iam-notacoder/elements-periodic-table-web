@@ -44,9 +44,14 @@ export default function ElementModal({ element, onClose }) {
     setImgLoading(true);
 
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`, { signal: controller.signal })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(d => {
-        const url = d?.thumbnail?.source ?? null;
+        const raw = d?.thumbnail?.source ?? null;
+        // Only accept images from the expected Wikipedia media domain
+        const url = (typeof raw === 'string' && raw.startsWith('https://upload.wikimedia.org/')) ? raw : null;
         imgCache.set(num, url);
         setImgUrl(url);
         setImgLoading(false);

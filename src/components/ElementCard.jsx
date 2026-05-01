@@ -1,10 +1,9 @@
+import { memo } from 'react';
 import { Card, CardActionArea, Typography, Box } from '@mui/material';
-import { CATEGORIES } from '../data';
+import { CATEGORIES, STATE_ICONS } from '../data';
 
-const STATE_ICONS = { Gas: '💨', Liquid: '💧', Solid: '⬛', Unknown: '❓' };
-
-export default function ElementCard({ element, dimmed, highlighted, onClick }) {
-  const [num, sym, name, mass, cat, period, group] = element;
+const ElementCard = memo(function ElementCard({ element, dimmed, highlighted, onClick }) {
+  const [num, sym, name, mass, cat] = element;
   const color = CATEGORIES[cat]?.color ?? '#546e7a';
   const stateIcon = STATE_ICONS[element[8]] ?? '';
 
@@ -45,4 +44,6 @@ export default function ElementCard({ element, dimmed, highlighted, onClick }) {
       </CardActionArea>
     </Card>
   );
-}
+});
+
+export default ElementCard;

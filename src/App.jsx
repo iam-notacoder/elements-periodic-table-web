@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   AppBar, Toolbar, Typography, TextField, InputAdornment, Box,
-  ToggleButtonGroup, ToggleButton, Chip, Stack, Container, useMediaQuery, useTheme,
+  ToggleButtonGroup, ToggleButton, Chip, Stack, Container,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -11,17 +11,21 @@ import ElementList from './components/ElementList';
 import ElementModal from './components/ElementModal';
 import { CATEGORIES } from './data';
 
+const CATEGORY_ENTRIES = Object.entries(CATEGORIES);
+
 export default function App() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [search, setSearch] = useState('');
   const [activeCat, setActiveCat] = useState(null);
-  const [view, setView] = useState(isMobile ? 'list' : 'table');
+  const [view, setView] = useState('table');
   const [selectedElement, setSelectedElement] = useState(null);
 
-  const handleCatClick = (cat) => {
+  const handleCatClick = useCallback((cat) => {
     setActiveCat(prev => prev === cat ? null : cat);
-  };
+  }, []);
+
+  const handleViewChange = useCallback((_, v) => { if (v) setView(v); }, []);
+  const handleSearch = useCallback((e) => setSearch(e.target.value), []);
+  const handleCloseModal = useCallback(() => setSelectedElement(null), []);
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -34,7 +38,7 @@ export default function App() {
             size="small"
             placeholder="Search elements…"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={handleSearch}
             InputProps={{
               startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
             }}
@@ -52,7 +56,7 @@ export default function App() {
           <ToggleButtonGroup
             value={view}
             exclusive
-            onChange={(_, v) => v && setView(v)}
+            onChange={handleViewChange}
             size="small"
             sx={{ bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1 }}
           >
@@ -69,7 +73,7 @@ export default function App() {
       {/* Category filter chips */}
       <Box sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
         <Stack direction="row" spacing={0.75} sx={{ px: 2, py: 1, width: 'max-content' }}>
-          {Object.entries(CATEGORIES).map(([key, { label, color }]) => (
+          {CATEGORY_ENTRIES.map(([key, { label, color }]) => (
             <Chip
               key={key}
               label={label}
@@ -108,7 +112,7 @@ export default function App() {
         )}
       </Box>
 
-      <ElementModal element={selectedElement} onClose={() => setSelectedElement(null)} />
+      <ElementModal element={selectedElement} onClose={handleCloseModal} />
     </Box>
   );
 }

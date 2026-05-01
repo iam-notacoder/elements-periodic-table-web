@@ -1,35 +1,38 @@
+import { memo, useMemo } from 'react';
 import {
-  List, ListItem, ListItemButton, ListItemText, Typography, Box, Divider,
+  List, ListItem, ListItemButton, ListItemText, Typography, Box,
 } from '@mui/material';
-import { ELEMENTS, CATEGORIES } from '../data';
+import { ELEMENTS, CATEGORIES, STATE_ICONS } from '../data';
 
-const STATE_ICONS = { Gas: '💨', Liquid: '💧', Solid: '⬛', Unknown: '❓' };
-
-export default function ElementList({ search, activeCat, onElementClick }) {
+const ElementList = memo(function ElementList({ search, activeCat, onElementClick }) {
   const searchLower = search.toLowerCase();
 
-  const filtered = ELEMENTS.filter(el => {
-    const [num, sym, name, mass, cat] = el;
-    const matchesSearch = !search || sym.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower) || String(num).includes(search);
-    const matchesCat = !activeCat || cat === activeCat;
-    return matchesSearch && matchesCat;
-  });
+  const grouped = useMemo(() => {
+    const filtered = ELEMENTS.filter(el => {
+      const [num, sym, name, , cat] = el;
+      const matchesSearch = !search || sym.toLowerCase().includes(searchLower) || name.toLowerCase().includes(searchLower) || String(num).includes(search);
+      const matchesCat = !activeCat || cat === activeCat;
+      return matchesSearch && matchesCat;
+    });
 
-  // Group by category
-  const grouped = {};
-  filtered.forEach(el => {
-    const cat = el[4];
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(el);
-  });
+    const groups = {};
+    filtered.forEach(el => {
+      const cat = el[4];
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(el);
+    });
+    return groups;
+  }, [search, searchLower, activeCat]);
 
-  if (filtered.length === 0) {
+  const entries = Object.entries(grouped);
+
+  if (entries.length === 0) {
     return <Typography color="text.secondary" sx={{ p: 2 }}>No elements match your search.</Typography>;
   }
 
   return (
     <Box>
-      {Object.entries(grouped).map(([cat, els]) => (
+      {entries.map(([cat, els]) => (
         <Box key={cat} sx={{ mb: 2 }}>
           <Typography
             variant="subtitle2"
@@ -65,4 +68,6 @@ export default function ElementList({ search, activeCat, onElementClick }) {
       ))}
     </Box>
   );
-}
+});
+
+export default ElementList;

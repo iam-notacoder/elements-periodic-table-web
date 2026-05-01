@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Dialog, DialogContent, DialogTitle, IconButton, Typography, Box,
   Chip, Divider, Grid, CircularProgress, useMediaQuery, useTheme, Drawer,
@@ -7,6 +7,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import { CATEGORIES, DISCOVERY } from '../data';
 
 const STATE_LABELS = { Gas: '💨 Gas', Liquid: '💧 Liquid', Solid: '⬛ Solid', Unknown: '❓ Unknown' };
+
+// Module-level image cache — persists for the session
+const imgCache = new Map();
 
 function DetailRow({ label, value }) {
   if (!value && value !== 0) return null;
@@ -26,16 +29,33 @@ export default function ElementModal({ element, onClose }) {
 
   useEffect(() => {
     if (!element) return;
+
+    const num = element[0];
+    const name = element[2];
+
+    if (imgCache.has(num)) {
+      setImgUrl(imgCache.get(num));
+      setImgLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
     setImgUrl(null);
     setImgLoading(true);
-    const name = element[2];
-    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
+
+    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`, { signal: controller.signal })
       .then(r => r.json())
       .then(d => {
-        setImgUrl(d?.thumbnail?.source ?? null);
+        const url = d?.thumbnail?.source ?? null;
+        imgCache.set(num, url);
+        setImgUrl(url);
         setImgLoading(false);
       })
-      .catch(() => setImgLoading(false));
+      .catch(err => {
+        if (err.name !== 'AbortError') setImgLoading(false);
+      });
+
+    return () => controller.abort();
   }, [element]);
 
   if (!element) return null;
@@ -44,6 +64,8 @@ export default function ElementModal({ element, onClose }) {
   const color = CATEGORIES[cat]?.color ?? '#546e7a';
   const catLabel = CATEGORIES[cat]?.label ?? cat;
   const discovery = DISCOVERY[num];
+  const massFormatted = typeof mass === 'number' ? mass.toFixed(3) : mass;
+  const massDetailFormatted = typeof mass === 'number' ? `${mass.toFixed(4)} u` : mass;
 
   const content = (
     <Box>
@@ -57,7 +79,7 @@ export default function ElementModal({ element, onClose }) {
         >
           <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>{num}</Typography>
           <Typography sx={{ fontSize: 32, fontWeight: 800, color, lineHeight: 1 }}>{sym}</Typography>
-          <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>{typeof mass === 'number' ? mass.toFixed(3) : mass}</Typography>
+          <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>{massFormatted}</Typography>
         </Box>
         <Box sx={{ flex: 1 }}>
           <Typography variant="h5" fontWeight={700}>{name}</Typography>
@@ -84,7 +106,7 @@ export default function ElementModal({ element, onClose }) {
       <Grid container spacing={1}>
         <Grid item xs={12} sm={6}>
           <DetailRow label="Atomic Number" value={num} />
-          <DetailRow label="Atomic Mass" value={typeof mass === 'number' ? `${mass.toFixed(4)} u` : mass} />
+          <DetailRow label="Atomic Mass" value={massDetailFormatted} />
           <DetailRow label="Period" value={period} />
           <DetailRow label="Group" value={group} />
           <DetailRow label="Electron Config" value={config} />

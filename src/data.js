@@ -1,3 +1,5 @@
+export const STATE_ICONS = { Gas: '💨', Liquid: '💧', Solid: '⬛', Unknown: '❓' };
+
 export const CATEGORIES = {
   nonmetal:        { label: 'Reactive Nonmetal',    color: '#0288d1' },
   noble:           { label: 'Noble Gas',             color: '#7b1fa2' },

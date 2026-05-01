@@ -90,7 +90,7 @@ export default function App() {
       </Box>
 
       {/* Main content */}
-      <Box sx={{ p: { xs: 1, sm: 2 }, overflowX: 'auto' }}>
+      <Box sx={{ p: { xs: 1, sm: 2 }, overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
         {view === 'table' ? (
           <ElementGrid
             search={search}

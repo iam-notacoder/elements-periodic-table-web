@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   AppBar, Toolbar, Typography, TextField, InputAdornment, Box,
   ToggleButtonGroup, ToggleButton, Chip, Stack, Container,
@@ -9,7 +9,7 @@ import ListIcon from '@mui/icons-material/List';
 import ElementGrid from './components/ElementGrid';
 import ElementList from './components/ElementList';
 import ElementModal from './components/ElementModal';
-import { CATEGORIES } from './data';
+import { CATEGORIES, ELEMENTS } from './data';
 
 const CATEGORY_ENTRIES = Object.entries(CATEGORIES);
 
@@ -27,8 +27,29 @@ export default function App() {
   const handleSearch = useCallback((e) => setSearch(e.target.value), []);
   const handleCloseModal = useCallback(() => setSelectedElement(null), []);
 
+  const matchCount = useMemo(() => {
+    const q = search.toLowerCase();
+    return ELEMENTS.filter(([num, sym, name, , cat]) => {
+      const matchesSearch = !search || sym.toLowerCase().includes(q) || name.toLowerCase().includes(q) || String(num).includes(search);
+      const matchesCat = !activeCat || cat === activeCat;
+      return matchesSearch && matchesCat;
+    }).length;
+  }, [search, activeCat]);
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Skip navigation link */}
+      <Box
+        component="a"
+        href="#main-content"
+        sx={{
+          position: 'absolute', left: '-999px', top: 'auto', width: 1, height: 1, overflow: 'hidden',
+          '&:focus': { left: 8, top: 8, width: 'auto', height: 'auto', zIndex: 9999, bgcolor: 'white', p: 1, borderRadius: 1 },
+        }}
+      >
+        Skip to main content
+      </Box>
+
       <AppBar position="sticky" elevation={1}>
         <Toolbar sx={{ gap: 2, flexWrap: 'wrap', py: 1 }}>
           <Typography variant="h6" fontWeight={700} sx={{ flexShrink: 0 }}>
@@ -39,8 +60,9 @@ export default function App() {
             placeholder="Search elements…"
             value={search}
             onChange={handleSearch}
+            inputProps={{ 'aria-label': 'Search elements' }}
             InputProps={{
-              startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+              startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" aria-hidden="true" /></InputAdornment>,
             }}
             sx={{
               flex: 1, minWidth: 160, maxWidth: 320,
@@ -58,20 +80,25 @@ export default function App() {
             exclusive
             onChange={handleViewChange}
             size="small"
+            aria-label="View mode"
             sx={{ bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1 }}
           >
-            <ToggleButton value="table" sx={{ color: 'white', border: 'none', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.3)', color: 'white' } }}>
+            <ToggleButton value="table" aria-label="Table view" sx={{ color: 'white', border: 'none', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.3)', color: 'white' } }}>
               <TableChartIcon fontSize="small" />
             </ToggleButton>
-            <ToggleButton value="list" sx={{ color: 'white', border: 'none', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.3)', color: 'white' } }}>
+            <ToggleButton value="list" aria-label="List view" sx={{ color: 'white', border: 'none', '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.3)', color: 'white' } }}>
               <ListIcon fontSize="small" />
             </ToggleButton>
           </ToggleButtonGroup>
         </Toolbar>
       </AppBar>
 
-      {/* Category filter chips */}
-      <Box sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
+      {/* Category filter */}
+      <Box
+        component="nav"
+        aria-label="Filter by element category"
+        sx={{ bgcolor: 'background.paper', borderBottom: '1px solid', borderColor: 'divider', overflowX: 'auto' }}
+      >
         <Stack direction="row" spacing={0.75} sx={{ px: 2, py: 1, width: 'max-content' }}>
           {CATEGORY_ENTRIES.map(([key, { label, color }]) => (
             <Chip
@@ -79,6 +106,8 @@ export default function App() {
               label={label}
               size="small"
               onClick={() => handleCatClick(key)}
+              role="button"
+              aria-pressed={activeCat === key}
               variant={activeCat === key ? 'filled' : 'outlined'}
               sx={{
                 borderColor: color,
@@ -93,8 +122,21 @@ export default function App() {
         </Stack>
       </Box>
 
+      {/* Screen reader live region for result count */}
+      <Box
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+      >
+        {(search || activeCat) ? `${matchCount} element${matchCount !== 1 ? 's' : ''} shown` : ''}
+      </Box>
+
       {/* Main content */}
-      <Box sx={{ p: { xs: 1, sm: 2 }, overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
+      <Box
+        id="main-content"
+        component="main"
+        sx={{ p: { xs: 1, sm: 2 }, overflowX: 'auto', display: 'flex', justifyContent: 'center' }}
+      >
         {view === 'table' ? (
           <ElementGrid
             search={search}

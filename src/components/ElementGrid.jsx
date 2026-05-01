@@ -3,7 +3,6 @@ import { Box } from '@mui/material';
 import ElementCard from './ElementCard';
 import { ELEMENTS } from '../data';
 
-// Build grid positions once at module load — single pass
 const GRID_POSITIONS = {};
 ELEMENTS.forEach(el => {
   const [num, , , , cat, period, group] = el;
@@ -38,6 +37,8 @@ const ElementGrid = memo(function ElementGrid({ search, activeCat, onElementClic
 
   return (
     <Box
+      role="grid"
+      aria-label="Periodic table of elements"
       sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(18, 52px)',
@@ -51,7 +52,7 @@ const ElementGrid = memo(function ElementGrid({ search, activeCat, onElementClic
         const pos = GRID_POSITIONS[el[0]];
         if (!pos) return null;
         return (
-          <Box key={el[0]} sx={{ gridColumn: pos.col, gridRow: pos.row }}>
+          <Box key={el[0]} role="gridcell" sx={{ gridColumn: pos.col, gridRow: pos.row }}>
             <ElementCard
               element={el}
               dimmed={dimmed}

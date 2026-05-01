@@ -1,14 +1,18 @@
 import { useEffect, useState, useRef } from 'react';
 import {
-  Dialog, DialogContent, DialogTitle, IconButton, Typography, Box,
+  Dialog, DialogContent, IconButton, Typography, Box,
   Chip, Divider, Grid, CircularProgress, useMediaQuery, useTheme, Drawer,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { CATEGORIES, DISCOVERY } from '../data';
 
-const STATE_LABELS = { Gas: '💨 Gas', Liquid: '💧 Liquid', Solid: '⬛ Solid', Unknown: '❓ Unknown' };
+const STATE_LABELS = {
+  Gas:     <><span role="img" aria-hidden="true">💨</span> Gas</>,
+  Liquid:  <><span role="img" aria-hidden="true">💧</span> Liquid</>,
+  Solid:   <><span role="img" aria-hidden="true">⬛</span> Solid</>,
+  Unknown: <><span role="img" aria-hidden="true">❓</span> Unknown</>,
+};
 
-// Module-level image cache — persists for the session
 const imgCache = new Map();
 
 function DetailRow({ label, value }) {
@@ -26,6 +30,17 @@ export default function ElementModal({ element, onClose }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [imgUrl, setImgUrl] = useState(null);
   const [imgLoading, setImgLoading] = useState(false);
+  const closeBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!element) return;
+
+    // Move focus to close button when drawer opens on mobile
+    if (isMobile) {
+      const frame = requestAnimationFrame(() => closeBtnRef.current?.focus());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [element, isMobile]);
 
   useEffect(() => {
     if (!element) return;
@@ -50,7 +65,6 @@ export default function ElementModal({ element, onClose }) {
       })
       .then(d => {
         const raw = d?.thumbnail?.source ?? null;
-        // Only accept images from the expected Wikipedia media domain
         const url = (typeof raw === 'string' && raw.startsWith('https://upload.wikimedia.org/')) ? raw : null;
         imgCache.set(num, url);
         setImgUrl(url);
@@ -76,6 +90,7 @@ export default function ElementModal({ element, onClose }) {
     <Box>
       <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'flex-start' }}>
         <Box
+          aria-hidden="true"
           sx={{
             minWidth: 80, height: 80, border: `2px solid ${color}`, borderRadius: 2,
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -91,12 +106,12 @@ export default function ElementModal({ element, onClose }) {
           <Chip label={catLabel} size="small" sx={{ mt: 0.5, bgcolor: `${color}20`, color }} />
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{STATE_LABELS[state] ?? state}</Typography>
         </Box>
-        {imgLoading && <CircularProgress size={60} />}
+        {imgLoading && <CircularProgress size={60} aria-label="Loading element image" />}
         {imgUrl && (
           <Box
             component="img"
             src={imgUrl}
-            alt={name}
+            alt={`${name} element`}
             sx={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }}
           />
         )}
@@ -132,8 +147,10 @@ export default function ElementModal({ element, onClose }) {
       <Drawer anchor="bottom" open={!!element} onClose={onClose} PaperProps={{ sx: { borderRadius: '16px 16px 0 0', maxHeight: '85dvh' } }}>
         <Box sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-            <Typography variant="h6">{name}</Typography>
-            <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+            <Typography variant="h6" component="h2">{name}</Typography>
+            <IconButton ref={closeBtnRef} onClick={onClose} size="small" aria-label="Close element details">
+              <CloseIcon />
+            </IconButton>
           </Box>
           <Box sx={{ overflowY: 'auto', maxHeight: 'calc(85dvh - 60px)' }}>
             {content}
@@ -144,11 +161,11 @@ export default function ElementModal({ element, onClose }) {
   }
 
   return (
-    <Dialog open={!!element} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        {name}
-        <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
-      </DialogTitle>
+    <Dialog open={!!element} onClose={onClose} maxWidth="sm" fullWidth aria-labelledby="element-dialog-title">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 3, pt: 2 }}>
+        <Typography id="element-dialog-title" variant="h6" component="h2">{name}</Typography>
+        <IconButton onClick={onClose} size="small" aria-label="Close element details"><CloseIcon /></IconButton>
+      </Box>
       <DialogContent>{content}</DialogContent>
     </Dialog>
   );

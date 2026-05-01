@@ -5,7 +5,9 @@ import { CATEGORIES, STATE_ICONS } from '../data';
 const ElementCard = memo(function ElementCard({ element, dimmed, highlighted, onClick }) {
   const [num, sym, name, mass, cat] = element;
   const color = CATEGORIES[cat]?.color ?? '#546e7a';
-  const stateIcon = STATE_ICONS[element[8]] ?? '';
+  const catLabel = CATEGORIES[cat]?.label ?? cat;
+  const state = element[8];
+  const stateIcon = STATE_ICONS[state] ?? '';
 
   return (
     <Card
@@ -24,16 +26,19 @@ const ElementCard = memo(function ElementCard({ element, dimmed, highlighted, on
     >
       <CardActionArea
         onClick={onClick}
+        aria-label={`${name}, element ${num}, ${catLabel}`}
         sx={{ height: '100%', p: '2px 3px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'space-between' }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <Typography sx={{ fontSize: 9, color: 'text.secondary', lineHeight: 1 }}>{num}</Typography>
-          <Typography sx={{ fontSize: 8, lineHeight: 1 }}>{stateIcon}</Typography>
+          <Typography aria-hidden="true" sx={{ fontSize: 9, color: 'text.secondary', lineHeight: 1 }}>{num}</Typography>
+          <Typography component="span" role="img" aria-label={state ?? 'unknown state'} sx={{ fontSize: 8, lineHeight: 1 }}>
+            {stateIcon}
+          </Typography>
         </Box>
-        <Typography sx={{ fontSize: 16, fontWeight: 700, color, lineHeight: 1, alignSelf: 'center' }}>
+        <Typography aria-hidden="true" sx={{ fontSize: 16, fontWeight: 700, color, lineHeight: 1, alignSelf: 'center' }}>
           {sym}
         </Typography>
-        <Box sx={{ width: '100%' }}>
+        <Box aria-hidden="true" sx={{ width: '100%' }}>
           <Typography sx={{ fontSize: 6.5, textAlign: 'center', lineHeight: 1, color: 'text.primary', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {name}
           </Typography>

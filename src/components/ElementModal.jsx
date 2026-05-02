@@ -28,8 +28,7 @@ function DetailRow({ label, value }) {
 export default function ElementModal({ element, onClose }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [imgUrl, setImgUrl] = useState(null);
-  const [imgLoading, setImgLoading] = useState(false);
+  const [imgResult, setImgResult] = useState({ elementNumber: null, url: null });
   const closeBtnRef = useRef(null);
 
   useEffect(() => {
@@ -43,20 +42,14 @@ export default function ElementModal({ element, onClose }) {
   }, [element, isMobile]);
 
   useEffect(() => {
-    if (!element) return;
+    if (!element) return undefined;
 
     const num = element[0];
     const name = element[2];
 
-    if (imgCache.has(num)) {
-      setImgUrl(imgCache.get(num));
-      setImgLoading(false);
-      return;
-    }
+    if (imgCache.has(num)) return undefined;
 
     const controller = new AbortController();
-    setImgUrl(null);
-    setImgLoading(true);
 
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`, { signal: controller.signal })
       .then(r => {
@@ -67,11 +60,13 @@ export default function ElementModal({ element, onClose }) {
         const raw = d?.thumbnail?.source ?? null;
         const url = (typeof raw === 'string' && raw.startsWith('https://upload.wikimedia.org/')) ? raw : null;
         imgCache.set(num, url);
-        setImgUrl(url);
-        setImgLoading(false);
+        setImgResult({ elementNumber: num, url });
       })
       .catch(err => {
-        if (err.name !== 'AbortError') setImgLoading(false);
+        if (err.name !== 'AbortError') {
+          imgCache.set(num, null);
+          setImgResult({ elementNumber: num, url: null });
+        }
       });
 
     return () => controller.abort();
@@ -85,6 +80,9 @@ export default function ElementModal({ element, onClose }) {
   const discovery = DISCOVERY[num];
   const massFormatted = typeof mass === 'number' ? mass.toFixed(3) : mass;
   const massDetailFormatted = typeof mass === 'number' ? `${mass.toFixed(4)} u` : mass;
+  const hasCachedImage = imgCache.has(num);
+  const imgUrl = hasCachedImage ? imgCache.get(num) : (imgResult.elementNumber === num ? imgResult.url : null);
+  const imgLoading = !hasCachedImage && imgResult.elementNumber !== num;
 
   const content = (
     <Box>
